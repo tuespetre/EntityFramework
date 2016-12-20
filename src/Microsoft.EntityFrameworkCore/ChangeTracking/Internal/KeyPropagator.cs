@@ -124,6 +124,11 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
                                 {
                                     entry.MarkAsTemporary(property);
                                 }
+                                else
+                                {
+                                    entry.MarkAsTemporary(property, isTemporary: false);
+                                }
+
                                 return true;
                             }
                         }
