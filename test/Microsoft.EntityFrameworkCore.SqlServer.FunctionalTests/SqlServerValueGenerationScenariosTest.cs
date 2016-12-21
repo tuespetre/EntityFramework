@@ -97,34 +97,6 @@ namespace Microsoft.EntityFrameworkCore.SqlServer.FunctionalTests
             }
         }
 
-        [Fact]
-        public void Insert_with_sequence_HiLo_for_nonkey_throws()
-        {
-            using (var testStore = SqlServerTestStore.Create(DatabaseName))
-            {
-                using (var context = new BlogContextHiLoNonKey(testStore.Name))
-                {
-                    Assert.Equal(SqlServerStrings.NonKeyValueGeneration(nameof(Blog.OtherId), nameof(Blog)),
-                        Assert.Throws<InvalidOperationException>(() => context.Database.EnsureCreated()).Message);
-                }
-            }
-        }
-
-        public class BlogContextHiLoNonKey : ContextBase
-        {
-            public BlogContextHiLoNonKey(string databaseName)
-                : base(databaseName)
-            {
-            }
-
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
-            {
-                modelBuilder.ForSqlServerUseSequenceHiLo();
-
-                modelBuilder.Entity<Blog>().Property(b => b.OtherId).ValueGeneratedOnAdd();
-            }
-        }
-
         [ConditionalFact]
         [SqlServerCondition(SqlServerCondition.SupportsSequences)]
         public void Insert_with_default_value_from_sequence()
@@ -642,7 +614,7 @@ END");
         }
 
         [Fact]
-        public void Insert_with_client_generated_GUID_nonkey_throws()
+        public void Insert_with_ValueGeneratedOnAdd_GUID_nonkey_property_throws()
         {
             using (var testStore = SqlServerTestStore.Create(DatabaseName))
             {

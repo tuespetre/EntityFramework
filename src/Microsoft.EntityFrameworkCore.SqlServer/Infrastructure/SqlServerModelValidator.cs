@@ -42,9 +42,10 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
         protected virtual void EnsureNoNonKeyValueGeneration([NotNull] IModel model)
         {
             foreach (var property in model.GetEntityTypes().SelectMany(t => t.GetDeclaredProperties())
-                .Where(p => (p.SqlServer().ValueGenerationStrategy == SqlServerValueGenerationStrategy.SequenceHiLo
-                             || p.SqlServer().ValueGenerationStrategy == SqlServerValueGenerationStrategy.IdentityColumn)
-                            && !p.IsKey()))
+                .Where(p =>
+                    (((SqlServerPropertyAnnotations)p.SqlServer()).GetSqlServerValueGenerationStrategy(fallbackToModel: false) == SqlServerValueGenerationStrategy.SequenceHiLo
+                     || ((SqlServerPropertyAnnotations)p.SqlServer()).GetSqlServerValueGenerationStrategy(fallbackToModel: false) == SqlServerValueGenerationStrategy.IdentityColumn)
+                    && !p.IsKey()))
             {
                 ShowError(SqlServerStrings.NonKeyValueGeneration(property.Name, property.DeclaringEntityType.DisplayName()));
             }
