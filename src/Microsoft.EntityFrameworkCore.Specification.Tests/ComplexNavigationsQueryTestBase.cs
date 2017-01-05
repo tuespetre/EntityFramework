@@ -3150,6 +3150,156 @@ namespace Microsoft.EntityFrameworkCore.Specification.Tests
                 e => e.Id);
         }
 
+        [ConditionalFact]
+        public virtual void Select_with_nested_aggregation_Sum_Count()
+        {
+            AssertQuery<Level1>(
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = l1.OneToMany_Optional.Sum(l2 => l2.OneToMany_Optional.Count())
+                    },
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = MaybeScalar(l1.OneToMany_Optional, ()
+                            => l1.OneToMany_Optional.Sum(l2
+                                => MaybeScalar<int>(l2.OneToMany_Optional, ()
+                                    => l2.OneToMany_Optional.Count()))).GetValueOrDefault()
+                    },
+                e => e.Id,
+                (a, b) => Assert.Equal(a.Sum, b.Sum));
+        }
+
+        [ConditionalFact]
+        public virtual void Select_with_nested_aggregation_Sum_LongCount()
+        {
+            AssertQuery<Level1>(
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = l1.OneToMany_Optional.Sum(l2 => l2.OneToMany_Optional.LongCount())
+                    },
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = MaybeScalar(l1.OneToMany_Optional, ()
+                            => l1.OneToMany_Optional.Sum(l2
+                                => MaybeScalar<long>(l2.OneToMany_Optional, ()
+                                    => l2.OneToMany_Optional.LongCount()))).GetValueOrDefault()
+                    },
+                e => e.Id,
+                (a, b) => Assert.Equal(a.Sum, b.Sum));
+        }
+
+        [ConditionalFact]
+        public virtual void Select_with_nested_aggregation_Sum_Sum()
+        {
+            AssertQuery<Level1>(
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = l1.OneToMany_Optional.Sum(l2 => l2.OneToMany_Optional.Sum(l3 => l3.Id))
+                    },
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = MaybeScalar(l1.OneToMany_Optional, ()
+                            => l1.OneToMany_Optional.Sum(l2
+                                => MaybeScalar<int>(l2.OneToMany_Optional, ()
+                                    => l2.OneToMany_Optional.Sum(l3 => l3.Id)))).GetValueOrDefault()
+                    },
+                e => e.Id,
+                (a, b) => Assert.Equal(a.Sum, b.Sum));
+        }
+
+        [ConditionalFact]
+        public virtual void Select_with_nested_aggregation_Sum_Min()
+        {
+            AssertQuery<Level1>(
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = l1.OneToMany_Optional.Sum(l2 => l2.OneToMany_Optional.Min(l3 => l3.Id))
+                    },
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = MaybeScalar(l1.OneToMany_Optional, ()
+                            => l1.OneToMany_Optional.Sum(l2
+                                => MaybeScalar<int>(l2.OneToMany_Optional, ()
+                                    => l2.OneToMany_Optional.Select(l3 => l3.Id).DefaultIfEmpty().Min()))).GetValueOrDefault()
+                    },
+                e => e.Id,
+                (a, b) => Assert.Equal(a.Sum, b.Sum));
+        }
+
+        [ConditionalFact]
+        public virtual void Select_with_nested_aggregation_Sum_Max()
+        {
+            AssertQuery<Level1>(
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = l1.OneToMany_Optional.Sum(l2 => l2.OneToMany_Optional.Max(l3 => l3.Id))
+                    },
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = MaybeScalar(l1.OneToMany_Optional, ()
+                            => l1.OneToMany_Optional.Sum(l2
+                                => MaybeScalar<int>(l2.OneToMany_Optional, ()
+                                    => l2.OneToMany_Optional.Select(l3 => l3.Id).DefaultIfEmpty().Max()))).GetValueOrDefault()
+                    },
+                e => e.Id,
+                (a, b) => Assert.Equal(a.Sum, b.Sum));
+        }
+
+        [ConditionalFact]
+        public virtual void Select_with_nested_aggregation_Sum_Average()
+        {
+            AssertQuery<Level1>(
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = l1.OneToMany_Optional.Sum(l2 => l2.OneToMany_Optional.Select(l3 => l3.Id).DefaultIfEmpty().Average())
+                    },
+                l1s =>
+                    from l1 in l1s
+                    select new
+                    {
+                        Id = l1.Id,
+                        Sum = MaybeScalar(l1.OneToMany_Optional, ()
+                            => l1.OneToMany_Optional.Sum(l2
+                                => MaybeScalar<double>(l2.OneToMany_Optional, ()
+                                    => l2.OneToMany_Optional.Select(l3 => l3.Id).DefaultIfEmpty().Average()))).GetValueOrDefault()
+                    },
+                e => e.Id,
+                (a, b) => Assert.Equal(a.Sum, b.Sum));
+        }
+
         private bool ClientMethod(int? id)
         {
             return true;

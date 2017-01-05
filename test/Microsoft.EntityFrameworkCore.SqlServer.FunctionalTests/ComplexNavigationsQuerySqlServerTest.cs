@@ -2400,6 +2400,69 @@ FROM [Level2] AS [l2]",
                 Sql);
         }
 
+        public override void Select_with_nested_aggregation_Sum_Count()
+        {
+            base.Select_with_nested_aggregation_Sum_Count();
+
+            // TODO: Assert what the SQL should be once the query doesn't throw
+        }
+
+        public override void Select_with_nested_aggregation_Sum_LongCount()
+        {
+            base.Select_with_nested_aggregation_Sum_LongCount();
+
+            // TODO: Assert what the SQL should be once the query doesn't throw
+        }
+
+        public override void Select_with_nested_aggregation_Sum_Sum()
+        {
+            base.Select_with_nested_aggregation_Sum_Sum();
+
+            // TODO: Assert what the SQL should be once the query doesn't throw
+        }
+
+        public override void Select_with_nested_aggregation_Sum_Min()
+        {
+            base.Select_with_nested_aggregation_Sum_Min();
+
+            // TODO: Assert what the SQL should be once the query doesn't throw
+        }
+
+        public override void Select_with_nested_aggregation_Sum_Max()
+        {
+            base.Select_with_nested_aggregation_Sum_Max();
+
+            // TODO: Assert what the SQL should be once the query doesn't throw
+        }
+
+        public override void Select_with_nested_aggregation_Sum_Average()
+        {
+            base.Select_with_nested_aggregation_Sum_Average();
+
+            Assert.StartsWith(@"SELECT [l1].[Id]
+FROM [Level1] AS [l1]", Sql);
+
+            Assert.Contains(
+                @"@_outer_Id3: 2
+
+SELECT [t4].[Id]
+FROM (
+    SELECT NULL AS [empty]
+) AS [empty4]
+LEFT JOIN (
+    SELECT [l34].[Id]
+    FROM [Level3] AS [l34]
+    WHERE @_outer_Id3 = [l34].[OneToMany_Optional_InverseId]
+) AS [t4] ON 1 = 1", Sql);
+
+            Assert.Contains(
+                @"@_outer_Id2: 2
+
+SELECT [l21].[Id]
+FROM [Level2] AS [l21]
+WHERE @_outer_Id2 = [l21].[OneToMany_Optional_InverseId]", Sql);
+        }
+
         private const string FileLineEnding = @"
 ";
 
