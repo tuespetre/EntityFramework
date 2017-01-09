@@ -234,11 +234,14 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
         /// </summary>
         public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
         {
-            selectClause.Selector = _subqueryInjector.Visit(selectClause.Selector);
+            var selectorVisitor = new SelectorNavigationRewritingExpressionVisitor(
+                CreateVisitorContext(queryModel));
 
             var originalType = selectClause.Selector.Type;
 
-            selectClause.TransformExpressions(CreateVisitor(queryModel).Visit);
+            selectClause.Selector = _subqueryInjector.Visit(selectClause.Selector);
+
+            selectClause.TransformExpressions(selectorVisitor.Visit);
 
             selectClause.Selector = CompensateForNullabilityDifference(selectClause.Selector, originalType);
         }
@@ -1688,6 +1691,166 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
                 }
 
                 return canPerformOptimization;
+            }
+        }
+
+        private class SelectorNavigationRewritingExpressionVisitor : NavigationRewritingExpressionVisitor
+        {
+            public SelectorNavigationRewritingExpressionVisitor(
+                NavigationRewritingExpressionVisitorContext context)
+                : base(context)
+            {
+            }
+
+            protected override Expression VisitSubQuery(SubQueryExpression expression)
+            {
+                var originalSubQueryModel = expression.QueryModel;
+
+                var scalarAggregateResultOperators =
+                    from o in originalSubQueryModel.ResultOperators
+                    where o is CountResultOperator ||
+                        o is LongCountResultOperator ||
+                        o is AverageResultOperator ||
+                        o is MaxResultOperator ||
+                        o is MinResultOperator ||
+                        o is SumResultOperator
+                    select o;
+
+                if (!scalarAggregateResultOperators.Any())
+                {
+                    return base.VisitSubQuery(expression);
+                }
+
+                var scalarAggregateOperator = scalarAggregateResultOperators.FirstOrDefault();
+
+                var oldFromExpression = originalSubQueryModel.MainFromClause.FromExpression;
+
+                var result = Context.BindNavigationPathPropertyExpression(oldFromExpression, (properties, querySource) =>
+                {
+                    var navigation = properties.OfType<INavigation>().LastOrDefault();
+
+                    if (navigation == null || !navigation.IsCollection())
+                    {
+                        return null;
+                    }
+
+                    var itemName = originalSubQueryModel.MainFromClause.ItemName;
+
+                    // Replace the from clause's expression with an entity queryable
+                    // before visiting it so the default 'subquery with where clause'
+                    // transformation does not get applied.
+
+                    var entityQueryable = Context.CreateEntityQueryable(navigation.GetTargetType());
+
+                    originalSubQueryModel.MainFromClause.FromExpression = entityQueryable;
+
+                    // Visit the subquery with the base implementation now so that
+                    // we can retrieve the updated selector expression.
+
+                    var groupedSubQuery = (SubQueryExpression)base.VisitSubQuery(expression);
+                    var groupedSubQueryModel = groupedSubQuery.QueryModel;
+
+                    // Add grouping to the subquery.
+
+                    var groupedSubQueryFromClauseReference =
+                        new QuerySourceReferenceExpression(groupedSubQueryModel.MainFromClause);
+
+                    var groupKeySelector = CreateKeyAccessExpression(
+                        groupedSubQueryFromClauseReference,
+                        navigation.ForeignKey.Properties,
+                        addNullCheck: false);
+
+                    var groupResultOperator = new GroupResultOperator(
+                        itemName + "_grouping",
+                        groupKeySelector,
+                        groupedSubQueryModel.SelectClause.Selector);
+
+                    groupedSubQueryModel.ResultOperators.Add(groupResultOperator);
+
+                    // 'Clear' the subquery's selector expression since the group result operator now has it.
+                    groupedSubQueryModel.SelectClause.Selector = groupedSubQueryFromClauseReference;
+
+                    // Remove the original result operator and also clear the result type
+                    // override that was set by it.
+                    groupedSubQueryModel.ResultOperators.Remove(scalarAggregateOperator);
+                    groupedSubQueryModel.ResultTypeOverride = null;
+
+                    // GroupJoin the subquery to the main from clause of the current query.
+
+                    var outerKeySelector = CreateKeyAccessExpression(
+                        new QuerySourceReferenceExpression(querySource),
+                        navigation.ForeignKey.PrincipalKey.Properties,
+                        addNullCheck: false);
+
+                    if (groupKeySelector.Type.IsNullableType() && 
+                        groupKeySelector.Type.UnwrapNullableType() == outerKeySelector.Type)
+                    {
+                        outerKeySelector = Expression.Convert(outerKeySelector, groupKeySelector.Type);
+                    }
+
+                    var groupingKeyProperty = groupResultOperator.ItemType.GetTypeInfo().GetDeclaredProperty("Key");
+                    var groupingParameter = Expression.Parameter(groupResultOperator.ItemType);
+
+                    var joinClause = new JoinClause(
+                        $"{itemName}_grouping",
+                        groupResultOperator.ItemType,
+                        new SubQueryExpression(groupedSubQueryModel),
+                        outerKeySelector,
+                        Expression.Constant(null));
+
+                    joinClause.InnerKeySelector = Expression.MakeMemberAccess(
+                        new QuerySourceReferenceExpression(joinClause),
+                        groupingKeyProperty);
+
+                    var groupJoinClause = new GroupJoinClause(
+                        $"{itemName}_grouping_group",
+                        typeof(IEnumerable<>).MakeGenericType(groupResultOperator.ItemType),
+                        joinClause);
+
+                    Context.QueryModel.BodyClauses.Add(groupJoinClause);
+
+                    var defaultIfEmptyGroupItemFromClause = new MainFromClause(
+                        $"{itemName}_grouping",
+                        groupResultOperator.ItemType,
+                        new QuerySourceReferenceExpression(groupJoinClause));
+
+                    var defaultIfEmptyGroupingFromClause = new AdditionalFromClause(
+                        itemName,
+                        groupResultOperator.ElementSelector.Type,
+                        new QuerySourceReferenceExpression(defaultIfEmptyGroupItemFromClause));
+
+                    var defaultIfEmptySelectClause = new SelectClause(
+                        new QuerySourceReferenceExpression(defaultIfEmptyGroupingFromClause));
+
+                    var defaultIfEmptySubQuery = new QueryModel(
+                        defaultIfEmptyGroupItemFromClause,
+                        defaultIfEmptySelectClause);
+
+                    defaultIfEmptySubQuery.BodyClauses.Add(defaultIfEmptyGroupingFromClause);
+
+                    if (scalarAggregateOperator is AverageResultOperator ||
+                        scalarAggregateOperator is MaxResultOperator ||
+                        scalarAggregateOperator is MinResultOperator ||
+                        scalarAggregateOperator is SumResultOperator)
+                    {
+                        var defaultValueExpression = Expression.Constant(defaultIfEmptyGroupingFromClause.ItemType.GetDefaultValue());
+                        defaultIfEmptySubQuery.ResultOperators.Add(new DefaultIfEmptyResultOperator(defaultValueExpression));
+
+                        var groupedSubQueryDefaultIfEmpty = groupedSubQueryModel.ResultOperators.First() as DefaultIfEmptyResultOperator;
+                        if (groupedSubQueryDefaultIfEmpty != null)
+                        {
+                            groupedSubQueryModel.ResultOperators.Remove(groupedSubQueryDefaultIfEmpty);
+                        }
+                    }
+
+                    defaultIfEmptySubQuery.ResultOperators.Add(scalarAggregateOperator);
+
+                    // Replace the original subquery with a new reference to the grouping result query source.
+
+                    return new SubQueryExpression(defaultIfEmptySubQuery);
+                });
+
+                return result ?? base.VisitSubQuery(expression);
             }
         }
         
