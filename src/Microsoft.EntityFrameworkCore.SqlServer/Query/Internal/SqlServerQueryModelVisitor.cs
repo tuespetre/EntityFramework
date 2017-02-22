@@ -51,7 +51,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             [NotNull] ISqlTranslatingExpressionVisitorFactory sqlTranslatingExpressionVisitorFactory,
             [NotNull] ICompositePredicateExpressionVisitorFactory compositePredicateExpressionVisitorFactory,
             [NotNull] IConditionalRemovingExpressionVisitorFactory conditionalRemovingExpressionVisitorFactory,
-            [NotNull] IQueryFlattenerFactory queryFlattenerFactory,
             [NotNull] IDbContextOptions contextOptions,
             [NotNull] RelationalQueryCompilationContext queryCompilationContext,
             // ReSharper disable once SuggestBaseTypeForParameter
@@ -76,7 +75,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 sqlTranslatingExpressionVisitorFactory,
                 compositePredicateExpressionVisitorFactory,
                 conditionalRemovingExpressionVisitorFactory,
-                queryFlattenerFactory,
                 contextOptions,
                 queryCompilationContext,
                 parentQueryModelVisitor)

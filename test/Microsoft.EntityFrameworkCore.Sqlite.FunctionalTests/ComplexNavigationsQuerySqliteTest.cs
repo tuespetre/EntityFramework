@@ -11,5 +11,15 @@ namespace Microsoft.EntityFrameworkCore.Sqlite.FunctionalTests
             : base(fixture)
         {
         }
+
+        public override void GroupJoin_with_subquery_on_inner()
+        {
+            base.GroupJoin_with_subquery_on_inner();
+        }
+
+        public override void SelectMany_with_navigation_filter_paging_and_explicit_DefaultIfEmpty()
+        {
+            base.SelectMany_with_navigation_filter_paging_and_explicit_DefaultIfEmpty();
+        }
     }
 }

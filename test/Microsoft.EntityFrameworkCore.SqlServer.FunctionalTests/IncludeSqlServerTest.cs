@@ -708,7 +708,7 @@ FROM (
     ORDER BY [c].[CustomerID]
 ) AS [t]
 CROSS JOIN [Customers] AS [c2]
-ORDER BY [t].[CustomerID], [c2].[CustomerID]
+ORDER BY [c2].[CustomerID]
 
 @__p_0: 5
 
@@ -921,8 +921,7 @@ FROM (
     FROM [Customers] AS [c]
     ORDER BY [c].[CustomerID]
 ) AS [t]
-CROSS JOIN [Customers] AS [c2]
-ORDER BY [t].[CustomerID]",
+CROSS JOIN [Customers] AS [c2]",
                 Sql);
         }
 
@@ -944,8 +943,7 @@ FROM (
     ORDER BY [od].[OrderID], [od].[ProductID]
     OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
 ) AS [t]
-INNER JOIN [Orders] AS [od.Order] ON [t].[OrderID] = [od.Order].[OrderID]
-ORDER BY [t].[OrderID], [t].[ProductID]",
+INNER JOIN [Orders] AS [od.Order] ON [t].[OrderID] = [od.Order].[OrderID]",
                     Sql);
             }
         }
@@ -1063,8 +1061,7 @@ CROSS JOIN (
     ORDER BY [o0].[CustomerID]
     OFFSET 2 ROWS FETCH NEXT 2 ROWS ONLY
 ) AS [t0]
-LEFT JOIN [Customers] AS [o2.Customer] ON [t0].[CustomerID] = [o2.Customer].[CustomerID]
-ORDER BY [t].[CustomerID]",
+LEFT JOIN [Customers] AS [o2.Customer] ON [t0].[CustomerID] = [o2.Customer].[CustomerID]",
                     Sql);
             }
         }
@@ -1090,8 +1087,7 @@ CROSS JOIN (
     FROM [Orders] AS [o0]
     ORDER BY [o0].[OrderID]
     OFFSET 2 ROWS FETCH NEXT 2 ROWS ONLY
-) AS [t0]
-ORDER BY [t].[OrderID]",
+) AS [t0]",
                     Sql);
             }
         }
@@ -1117,8 +1113,7 @@ CROSS JOIN (
     ORDER BY [o0].[OrderID]
     OFFSET 2 ROWS FETCH NEXT 2 ROWS ONLY
 ) AS [t0]
-LEFT JOIN [Customers] AS [o2.Customer] ON [t0].[CustomerID] = [o2.Customer].[CustomerID]
-ORDER BY [t].[OrderID]",
+LEFT JOIN [Customers] AS [o2.Customer] ON [t0].[CustomerID] = [o2.Customer].[CustomerID]",
                     Sql);
             }
         }
