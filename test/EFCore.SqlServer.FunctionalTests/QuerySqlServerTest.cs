@@ -613,8 +613,8 @@ ORDER BY [c].[CustomerID]
 SELECT CASE
     WHEN EXISTS (
         SELECT 1
-        FROM [Orders] AS [o1]
-        WHERE [o1].[CustomerID] = @_outer_CustomerID)
+        FROM [Orders] AS [o0]
+        WHERE [o0].[CustomerID] = @_outer_CustomerID)
     THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT)
 END
 
@@ -623,8 +623,8 @@ END
 SELECT CASE
     WHEN EXISTS (
         SELECT 1
-        FROM [Orders] AS [o1]
-        WHERE [o1].[CustomerID] = @_outer_CustomerID)
+        FROM [Orders] AS [o0]
+        WHERE [o0].[CustomerID] = @_outer_CustomerID)
     THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT)
 END",
                 Sql);
@@ -1760,8 +1760,11 @@ FROM (
             Assert.Equal(
                 @"@__p_0: 91
 
-SELECT TOP(@__p_0) [c0].[CustomerID], [c0].[Address], [c0].[City], [c0].[CompanyName], [c0].[ContactName], [c0].[ContactTitle], [c0].[Country], [c0].[Fax], [c0].[Phone], [c0].[PostalCode], [c0].[Region]
-FROM [Customers] AS [c0]",
+SELECT [t].[CustomerID], [t].[Address], [t].[City], [t].[CompanyName], [t].[ContactName], [t].[ContactTitle], [t].[Country], [t].[Fax], [t].[Phone], [t].[PostalCode], [t].[Region]
+FROM (
+    SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+    FROM [Customers] AS [c]
+) AS [t]",
                 Sql);
         }
 
@@ -3224,9 +3227,13 @@ FROM [Customers] AS [c]",
             Assert.Contains(
                 @"@__p_0: 5
 
-SELECT TOP(@__p_0) [o20].[OrderID], [o20].[CustomerID], [o20].[EmployeeID], [o20].[OrderDate]
-FROM [Orders] AS [o20]
-ORDER BY [o20].[OrderID]",
+SELECT [t].[OrderID], [t].[CustomerID], [t].[EmployeeID], [t].[OrderDate]
+FROM (
+    SELECT TOP(@__p_0) [o2].[OrderID], [o2].[CustomerID], [o2].[EmployeeID], [o2].[OrderDate]
+    FROM [Orders] AS [o2]
+    ORDER BY [o2].[OrderID]
+) AS [t]
+ORDER BY [t].[OrderID]",
                 Sql);
 
             Assert.Contains(
@@ -6350,8 +6357,8 @@ ORDER BY COALESCE([c].[Region], N'ZZ')",
             Assert.StartsWith(
                 @"SELECT [e].[CustomerID], (
     SELECT COUNT(*)
-    FROM [Orders] AS [o1]
-    WHERE [e].[CustomerID] = [o1].[CustomerID]
+    FROM [Orders] AS [o0]
+    WHERE [e].[CustomerID] = [o0].[CustomerID]
 )
 FROM [Customers] AS [e]
 WHERE ([e].[ContactTitle] = N'Owner') AND ((

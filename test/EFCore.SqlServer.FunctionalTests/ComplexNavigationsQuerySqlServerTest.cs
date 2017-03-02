@@ -1845,10 +1845,14 @@ ORDER BY [t].[Id]",
             Assert.Equal(
                 @"@__p_0: 10
 
-SELECT TOP(@__p_0) [l3.OneToOne_Required_FK_Inverse0].[Id], [l3.OneToOne_Required_FK_Inverse0].[Date], [l3.OneToOne_Required_FK_Inverse0].[Level1_Optional_Id], [l3.OneToOne_Required_FK_Inverse0].[Level1_Required_Id], [l3.OneToOne_Required_FK_Inverse0].[Name], [l3.OneToOne_Required_FK_Inverse0].[OneToMany_Optional_InverseId], [l3.OneToOne_Required_FK_Inverse0].[OneToMany_Optional_Self_InverseId], [l3.OneToOne_Required_FK_Inverse0].[OneToMany_Required_InverseId], [l3.OneToOne_Required_FK_Inverse0].[OneToMany_Required_Self_InverseId], [l3.OneToOne_Required_FK_Inverse0].[OneToOne_Optional_PK_InverseId], [l3.OneToOne_Required_FK_Inverse0].[OneToOne_Optional_SelfId], [l30].[Name]
-FROM [Level3] AS [l30]
-INNER JOIN [Level2] AS [l3.OneToOne_Required_FK_Inverse0] ON [l30].[Level2_Required_Id] = [l3.OneToOne_Required_FK_Inverse0].[Id]
-ORDER BY [l3.OneToOne_Required_FK_Inverse0].[Id]",
+SELECT [t].[Id], [t].[Date], [t].[Level1_Optional_Id], [t].[Level1_Required_Id], [t].[Name], [t].[OneToMany_Optional_InverseId], [t].[OneToMany_Optional_Self_InverseId], [t].[OneToMany_Required_InverseId], [t].[OneToMany_Required_Self_InverseId], [t].[OneToOne_Optional_PK_InverseId], [t].[OneToOne_Optional_SelfId], [t].[c0]
+FROM (
+    SELECT TOP(@__p_0) [l3.OneToOne_Required_FK_Inverse].[Id], [l3.OneToOne_Required_FK_Inverse].[Date], [l3.OneToOne_Required_FK_Inverse].[Level1_Optional_Id], [l3.OneToOne_Required_FK_Inverse].[Level1_Required_Id], [l3.OneToOne_Required_FK_Inverse].[Name], [l3.OneToOne_Required_FK_Inverse].[OneToMany_Optional_InverseId], [l3.OneToOne_Required_FK_Inverse].[OneToMany_Optional_Self_InverseId], [l3.OneToOne_Required_FK_Inverse].[OneToMany_Required_InverseId], [l3.OneToOne_Required_FK_Inverse].[OneToMany_Required_Self_InverseId], [l3.OneToOne_Required_FK_Inverse].[OneToOne_Optional_PK_InverseId], [l3.OneToOne_Required_FK_Inverse].[OneToOne_Optional_SelfId], [l3].[Name] AS [c0]
+    FROM [Level3] AS [l3]
+    INNER JOIN [Level2] AS [l3.OneToOne_Required_FK_Inverse] ON [l3].[Level2_Required_Id] = [l3.OneToOne_Required_FK_Inverse].[Id]
+    ORDER BY [l3.OneToOne_Required_FK_Inverse].[Id]
+) AS [t]
+ORDER BY [t].[Id]",
                 Sql);
         }
 
@@ -1885,11 +1889,14 @@ FROM (
             Assert.Equal(
                 @"@__p_0: 3
 
-SELECT TOP(@__p_0) [l20].[Id], [l20].[Date], [l20].[Level1_Optional_Id], [l20].[Level1_Required_Id], [l20].[Name], [l20].[OneToMany_Optional_InverseId], [l20].[OneToMany_Optional_Self_InverseId], [l20].[OneToMany_Required_InverseId], [l20].[OneToMany_Required_Self_InverseId], [l20].[OneToOne_Optional_PK_InverseId], [l20].[OneToOne_Optional_SelfId], [l10].[Id], [l10].[Date], [l10].[Name], [l10].[OneToMany_Optional_Self_InverseId], [l10].[OneToMany_Required_Self_InverseId], [l10].[OneToOne_Optional_SelfId]
-FROM [Level2] AS [l20]
-INNER JOIN [Level1] AS [l10] ON [l20].[Level1_Required_Id] = [l10].[Id]
-INNER JOIN [Level3] AS [l30] ON [l10].[Id] = [l30].[Level2_Required_Id]
-WHERE ([l10].[Name] = N'L1 03') AND ([l30].[Name] = N'L3 08')",
+SELECT [t].[Id], [t].[Date], [t].[Level1_Optional_Id], [t].[Level1_Required_Id], [t].[Name], [t].[OneToMany_Optional_InverseId], [t].[OneToMany_Optional_Self_InverseId], [t].[OneToMany_Required_InverseId], [t].[OneToMany_Required_Self_InverseId], [t].[OneToOne_Optional_PK_InverseId], [t].[OneToOne_Optional_SelfId], [t].[c0], [t].[c1], [t].[c2], [t].[c3], [t].[c4], [t].[c5]
+FROM (
+    SELECT TOP(@__p_0) [l2].[Id], [l2].[Date], [l2].[Level1_Optional_Id], [l2].[Level1_Required_Id], [l2].[Name], [l2].[OneToMany_Optional_InverseId], [l2].[OneToMany_Optional_Self_InverseId], [l2].[OneToMany_Required_InverseId], [l2].[OneToMany_Required_Self_InverseId], [l2].[OneToOne_Optional_PK_InverseId], [l2].[OneToOne_Optional_SelfId], [l1].[Id] AS [c0], [l1].[Date] AS [c1], [l1].[Name] AS [c2], [l1].[OneToMany_Optional_Self_InverseId] AS [c3], [l1].[OneToMany_Required_Self_InverseId] AS [c4], [l1].[OneToOne_Optional_SelfId] AS [c5]
+    FROM [Level2] AS [l2]
+    INNER JOIN [Level1] AS [l1] ON [l2].[Level1_Required_Id] = [l1].[Id]
+    INNER JOIN [Level3] AS [l3] ON [l1].[Id] = [l3].[Level2_Required_Id]
+    WHERE ([l1].[Name] = N'L1 03') AND ([l3].[Name] = N'L3 08')
+) AS [t]",
                 Sql);
         }
 
