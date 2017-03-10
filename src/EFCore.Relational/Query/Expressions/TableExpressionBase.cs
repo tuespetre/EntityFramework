@@ -4,6 +4,7 @@
 using System;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Utilities;
 using Remotion.Linq.Clauses;
 
@@ -87,6 +88,16 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
         public virtual bool HandlesQuerySource([NotNull] IQuerySource querySource)
         {
             Check.NotNull(querySource, nameof(querySource));
+            
+            switch (querySource)
+            {
+                case GroupJoinClause groupJoinClause:
+                    querySource = groupJoinClause.JoinClause;
+                    break;
+                case LeftOuterJoinClause leftOuterJoinClause:
+                    querySource = leftOuterJoinClause.AdditionalFromClause;
+                    break;
+            }
 
             return _querySource == querySource;
         }
