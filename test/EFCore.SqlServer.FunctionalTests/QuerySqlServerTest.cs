@@ -509,7 +509,6 @@ FROM (
     SELECT TOP(2) [o1].*
     FROM [Order Details] AS [o1]
 ) AS [t1]
-ORDER BY [t1].[ProductID], [t1].[OrderID]
 
 @_outer_CustomerID2: VINET (Size = 450)
 
@@ -527,7 +526,7 @@ WHERE [o20].[OrderID] = @_outer_OrderID1
 ORDER BY [o20].[OrderID], [c4].[CustomerID]",
                 Sql);
         }
-
+        
         public override void Where_subquery_anon()
         {
             base.Where_subquery_anon();
@@ -1745,11 +1744,8 @@ FROM [Customers] AS [c3]",
             Assert.Equal(
                 @"@__p_0: 91
 
-SELECT [t].[City]
-FROM (
-    SELECT TOP(@__p_0) [c].*
-    FROM [Customers] AS [c]
-) AS [t]",
+SELECT TOP(@__p_0) [c].[City]
+FROM [Customers] AS [c]",
                 Sql);
         }
 
@@ -1760,11 +1756,8 @@ FROM (
             Assert.Equal(
                 @"@__p_0: 91
 
-SELECT [t].[CustomerID], [t].[Address], [t].[City], [t].[CompanyName], [t].[ContactName], [t].[ContactTitle], [t].[Country], [t].[Fax], [t].[Phone], [t].[PostalCode], [t].[Region]
-FROM (
-    SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
-    FROM [Customers] AS [c]
-) AS [t]",
+SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+FROM [Customers] AS [c]",
                 Sql);
         }
 
@@ -1814,13 +1807,9 @@ ORDER BY [c].[CustomerID]",
             Assert.Equal(
                 @"@__p_0: 2
 
-SELECT [t].[City]
-FROM (
-    SELECT TOP(@__p_0) [c].*
-    FROM [Customers] AS [c]
-    ORDER BY [c].[CustomerID]
-) AS [t]
-ORDER BY [t].[CustomerID]",
+SELECT TOP(@__p_0) [c].[City]
+FROM [Customers] AS [c]
+ORDER BY [c].[CustomerID]",
                 Sql);
         }
 
@@ -2144,11 +2133,8 @@ FROM [Products] AS [p]",
             Assert.Equal(
                 @"@__p_0: 9
 
-SELECT [t].[EmployeeID]
-FROM (
-    SELECT TOP(@__p_0) [e].*
-    FROM [Employees] AS [e]
-) AS [t]",
+SELECT TOP(@__p_0) [e].[EmployeeID]
+FROM [Employees] AS [e]",
                 Sql);
         }
 
@@ -5022,7 +5008,7 @@ FROM [Order Details] AS [od]
 WHERE CEILING([od].[UnitPrice]) > 10.0",
                 Sql);
         }
-        
+
         public override void Where_math_floor()
         {
             base.Where_math_floor();
@@ -5597,12 +5583,9 @@ WHERE [c].[CustomerID] LIKE N'A' + N'%' AND (CHARINDEX(N'A', [c].[CustomerID]) =
 
 @_outer_CustomerID: ALFKI (Size = 450)
 
-SELECT [t].[OrderDate]
-FROM (
-    SELECT TOP(3) [o].*
-    FROM [Orders] AS [o]
-    WHERE ([o].[OrderID] < 10500) AND (@_outer_CustomerID = [o].[CustomerID])
-) AS [t]",
+SELECT TOP(3) [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE ([o].[OrderID] < 10500) AND (@_outer_CustomerID = [o].[CustomerID])",
                 Sql);
         }
 
@@ -5618,15 +5601,12 @@ WHERE [c].[CustomerID] LIKE N'A' + N'%' AND (CHARINDEX(N'A', [c].[CustomerID]) =
 @_outer_City: Berlin (Size = 6)
 @_outer_CustomerID: ALFKI (Size = 450)
 
-SELECT [t].[OrderDate]
-FROM (
-    SELECT TOP(3) [o].*
-    FROM [Orders] AS [o]
-    WHERE EXISTS (
-        SELECT 1
-        FROM [Order Details] AS [d]
-        WHERE ([d].[Discount] > LEN(@_outer_City)) AND ([o].[OrderID] = [d].[OrderID])) AND (@_outer_CustomerID = [o].[CustomerID])
-) AS [t]",
+SELECT TOP(3) [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE EXISTS (
+    SELECT 1
+    FROM [Order Details] AS [d]
+    WHERE ([d].[Discount] > LEN(@_outer_City)) AND ([o].[OrderID] = [d].[OrderID])) AND (@_outer_CustomerID = [o].[CustomerID])",
                 Sql);
         }
 
@@ -5654,12 +5634,9 @@ ORDER BY (
 
 @_outer_CustomerID: ALFKI (Size = 450)
 
-SELECT [t].[OrderDate]
-FROM (
-    SELECT TOP(3) [o0].*
-    FROM [Orders] AS [o0]
-    WHERE @_outer_CustomerID = [o0].[CustomerID]
-) AS [t]",
+SELECT TOP(3) [o0].[OrderDate]
+FROM [Orders] AS [o0]
+WHERE @_outer_CustomerID = [o0].[CustomerID]",
                 Sql);
         }
 
