@@ -97,6 +97,9 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
                 case LeftOuterJoinClause leftOuterJoinClause:
                     querySource = leftOuterJoinClause.AdditionalFromClause;
                     break;
+                case CrossJoinLateralClause crossJoinLateralClause:
+                    querySource = crossJoinLateralClause.AdditionalFromClause;
+                    break;
             }
 
             return _querySource == querySource;

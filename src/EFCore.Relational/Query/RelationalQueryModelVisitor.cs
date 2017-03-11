@@ -443,14 +443,40 @@ namespace Microsoft.EntityFrameworkCore.Query
                 return;
             }
 
-            if (!TryFlattenSelectMany(fromClause, queryModel, index, previousProjectionCount))
+            if (!TryFlattenSelectMany(fromClause, queryModel, index, previousProjectionCount, false))
             {
                 RequiresClientSelectMany = true;
-            }
-
-            if (RequiresClientSelectMany)
-            {
                 WarnClientEval(fromClause);
+            }
+        }
+
+        /// <summary>
+        ///     Visit a cross join lateral clause.
+        /// </summary>
+        /// <param name="crossJoinLateralClause"> The cross join lateral clause being visited. </param>
+        /// <param name="queryModel"> The query model. </param>
+        /// <param name="index"> Index of the node being visited. </param>
+        public virtual void VisitCrossJoinLateralClause(
+            [NotNull] CrossJoinLateralClause crossJoinLateralClause,
+            [NotNull] QueryModel queryModel,
+            int index)
+        {
+            Check.NotNull(crossJoinLateralClause, nameof(crossJoinLateralClause));
+            Check.NotNull(queryModel, nameof(queryModel));
+
+            var fromClause = crossJoinLateralClause.AdditionalFromClause;
+
+            var previousQuerySource = FindPreviousQuerySource(queryModel, index);
+            var previousSelectExpression = TryGetQuery(previousQuerySource);
+            var previousProjectionCount = previousSelectExpression?.Projection.Count ?? 0;
+
+            base.VisitAdditionalFromClause(fromClause, queryModel, index);
+
+            if (!QueryCompilationContext.IsLateralJoinSupported
+                || !TryFlattenSelectMany(fromClause, queryModel, index, previousProjectionCount, true))
+            {
+                RequiresClientSelectMany = true;
+                WarnClientEval(crossJoinLateralClause.AdditionalFromClause);
             }
         }
 
@@ -1092,6 +1118,9 @@ namespace Microsoft.EntityFrameworkCore.Query
 
             new LeftOuterJoinClauseQueryModelVisitor(QueryCompilationContext.QueryAnnotations)
                 .VisitQueryModel(queryModel);
+
+            new CrossJoinLateralClauseQueryModelVisitor(QueryCompilationContext.QueryAnnotations)
+                .VisitQueryModel(queryModel);
         }
 
         /// <summary>
@@ -1215,7 +1244,8 @@ namespace Microsoft.EntityFrameworkCore.Query
             AdditionalFromClause fromClause, 
             QueryModel queryModel, 
             int index,
-            int previousProjectionCount)
+            int previousProjectionCount,
+            bool correlated)
         {
             if (RequiresClientJoin || RequiresClientSelectMany)
             {
@@ -1224,22 +1254,9 @@ namespace Microsoft.EntityFrameworkCore.Query
 
             var outerQuerySource = FindPreviousQuerySource(queryModel, index);
             var outerSelectExpression = TryGetQuery(outerQuerySource);
-
-            if (outerSelectExpression == null)
-            {
-                return false;
-            }
-
             var innerSelectExpression = TryGetQuery(fromClause);
 
-            if (innerSelectExpression?.Tables.Count != 1)
-            {
-                return false;
-            }
-
-            var correlated = innerSelectExpression.IsCorrelated();
-
-            if (innerSelectExpression.IsCorrelated() && !QueryCompilationContext.IsLateralJoinSupported)
+            if (outerSelectExpression == null || innerSelectExpression == null)
             {
                 return false;
             }
@@ -1268,13 +1285,18 @@ namespace Microsoft.EntityFrameworkCore.Query
 
             var outerProjectionCount = outerSelectExpression.Projection.Count;
 
+            var tableToJoin
+                = innerSelectExpression.Tables.Count == 1
+                    ? innerSelectExpression.Tables[0]
+                    : innerSelectExpression;
+
             var joinExpression
                 = correlated
                     ? outerSelectExpression.AddCrossJoinLateral(
-                        innerSelectExpression.Tables.First(),
+                        tableToJoin,
                         innerSelectExpression.Projection)
                     : outerSelectExpression.AddCrossJoin(
-                        innerSelectExpression.Tables.First(),
+                        tableToJoin,
                         innerSelectExpression.Projection);
 
             joinExpression.QuerySource = fromClause;
