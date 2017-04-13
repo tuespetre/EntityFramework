@@ -948,8 +948,8 @@ namespace Microsoft.EntityFrameworkCore.Query
             {
                 var matchingIncludes
                     = from i in QueryCompilationContext.QueryAnnotations.OfType<IncludeResultOperator>()
-                        where shapedQuery.Shaper.IsShaperForQuerySource(i.QuerySource)
-                        select i;
+                      where shapedQuery.Shaper.IsShaperForQuerySource(i.QuerySource)
+                      select i;
 
                 if (!matchingIncludes.Any())
                 {
@@ -1171,12 +1171,12 @@ namespace Microsoft.EntityFrameworkCore.Query
             {
                 return false;
             }
-            
+
             var outerSelectExpression = outerShapedQuery.SelectExpression;
             var innerSelectExpression = innerShapedQuery.SelectExpression;
 
-           var sqlTranslatingExpressionVisitor
-                = _sqlTranslatingExpressionVisitorFactory.Create(this);
+            var sqlTranslatingExpressionVisitor
+                 = _sqlTranslatingExpressionVisitorFactory.Create(this);
 
             var predicate
                 = sqlTranslatingExpressionVisitor.Visit(
@@ -1689,8 +1689,6 @@ namespace Microsoft.EntityFrameworkCore.Query
 
         private const string OuterQueryParameterNamePrefix = @"_outer_";
 
-        private readonly Dictionary<string, Expression> _injectedParameters = new Dictionary<string, Expression>();
-
         private ParameterExpression BindPropertyToOuterParameter(IQuerySource querySource, IProperty property, bool isMemberExpression)
         {
             if (querySource != null && _canBindPropertyToOuterParameter)
@@ -1727,12 +1725,10 @@ namespace Microsoft.EntityFrameworkCore.Query
                         propertyExpression = Expression.Convert(propertyExpression, typeof(object));
                     }
 
-                    _injectedParameters[parameterName] = propertyExpression;
-
-                    Expression
-                        = CreateInjectParametersExpression(
-                            Expression,
-                            new Dictionary<string, Expression> { [parameterName] = propertyExpression });
+                    Expression = new InjectParametersExpression(
+                        QueryCompilationContext,
+                        Expression,
+                        new Dictionary<string, Expression> { [parameterName] = propertyExpression });
 
                     return Expression.Parameter(
                         property.ClrType,
@@ -1741,59 +1737,6 @@ namespace Microsoft.EntityFrameworkCore.Query
             }
 
             return null;
-        }
-
-        private Expression CreateInjectParametersExpression(Expression expression, Dictionary<string, Expression> parameters)
-        {
-            var parameterNameExpressions = new List<ConstantExpression>();
-            var parameterValueExpressions = new List<Expression>();
-
-            if (expression is MethodCallExpression methodCallExpression
-                && methodCallExpression.Method.MethodIsClosedFormOf(QueryCompilationContext.QueryMethodProvider.InjectParametersMethod))
-            {
-                var existingParameterNamesExpression = (NewArrayExpression)methodCallExpression.Arguments[2];
-                parameterNameExpressions.AddRange(existingParameterNamesExpression.Expressions.Cast<ConstantExpression>());
-
-                var existingParameterValuesExpression = (NewArrayExpression)methodCallExpression.Arguments[3];
-                parameterValueExpressions.AddRange(existingParameterValuesExpression.Expressions);
-
-                expression = methodCallExpression.Arguments[1];
-            }
-
-            parameterNameExpressions.AddRange(parameters.Keys.Select(Expression.Constant));
-            parameterValueExpressions.AddRange(parameters.Values);
-
-            var elementType = expression.Type.GetTypeInfo().GenericTypeArguments.Single();
-
-            return Expression.Call(
-                QueryCompilationContext.QueryMethodProvider.InjectParametersMethod.MakeGenericMethod(elementType),
-                QueryContextParameter,
-                expression,
-                Expression.NewArrayInit(typeof(string), parameterNameExpressions),
-                Expression.NewArrayInit(typeof(object), parameterValueExpressions));
-        }
-
-        /// <summary>
-        ///     Lifts the outer parameters injected into a subquery into the query
-        ///     expression that is being built by this query model visitor, so that
-        ///     the subquery can be lifted.
-        /// </summary>
-        /// <param name="subQueryModelVisitor"> The query model visitor for the subquery being lifted. </param>
-        public virtual void LiftInjectedParameters([NotNull] RelationalQueryModelVisitor subQueryModelVisitor)
-        {
-            Check.NotNull(subQueryModelVisitor, nameof(subQueryModelVisitor));
-
-            if (!subQueryModelVisitor._injectedParameters.Any())
-            {
-                return;
-            }
-
-            foreach (var pair in subQueryModelVisitor._injectedParameters)
-            {
-                _injectedParameters[pair.Key] = pair.Value;
-            }
-
-            Expression = CreateInjectParametersExpression(Expression, subQueryModelVisitor._injectedParameters);
         }
     }
 }

@@ -186,7 +186,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                     handlerContext,
                     Expression.Not(new ExistsExpression(innerSelectExpression)));
 
-                return TransformClientExpression<bool>(handlerContext);
+                return TransformClientExpression(handlerContext, typeof(bool));
             }
 
             return handlerContext.EvalOnClient();
@@ -209,7 +209,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 handlerContext,
                     new ExistsExpression(innerSelectExpression));
 
-            return TransformClientExpression<bool>(handlerContext);
+            return TransformClientExpression(handlerContext, typeof(bool));
         }
 
         private static Expression HandleAverage(HandlerContext handlerContext)
@@ -236,9 +236,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
                     handlerContext.SelectExpression.SetProjectionExpression(averageExpression);
 
-                    return (Expression)_transformClientExpressionMethodInfo
-                        .MakeGenericMethod(averageExpression.Type)
-                        .Invoke(null, new object [] { handlerContext });
+                    return TransformClientExpression(handlerContext, averageExpression.Type);
                 }
             }
 
@@ -302,7 +300,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                             handlerContext,
                             new ExistsExpression(outerSelectExpression));
 
-                        return TransformClientExpression<bool>(handlerContext);
+                        return TransformClientExpression(handlerContext, typeof(bool));
                     }
                 }
 
@@ -312,7 +310,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                         item,
                         handlerContext.SelectExpression.Clone("")));
 
-                return TransformClientExpression<bool>(handlerContext);
+                return TransformClientExpression(handlerContext, typeof(bool));
             }
 
             return handlerContext.EvalOnClient();
@@ -334,7 +332,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
             handlerContext.SelectExpression.ClearOrderBy();
 
-            return TransformClientExpression<int>(handlerContext);
+            return TransformClientExpression(handlerContext, typeof(int));
         }
 
         private static Expression HandleDefaultIfEmpty(HandlerContext handlerContext)
@@ -391,24 +389,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 }
 
                 return base.VisitExtension(extensionExpression);
-            }
-
-            protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
-            {
-                if (methodCallExpression.Method.MethodIsClosedFormOf(
-                    _relationalQueryCompilationContext.QueryMethodProvider.InjectParametersMethod))
-                {
-                    var newSource = Visit(methodCallExpression.Arguments[1]);
-
-                    return Expression.Call(
-                        methodCallExpression.Method,
-                        methodCallExpression.Arguments[0],
-                        newSource,
-                        methodCallExpression.Arguments[2],
-                        methodCallExpression.Arguments[3]);
-                }
-
-                return base.VisitMethodCall(methodCallExpression);
             }
         }
 
@@ -605,7 +585,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
             handlerContext.SelectExpression.ClearOrderBy();
 
-            return TransformClientExpression<long>(handlerContext);
+            return TransformClientExpression(handlerContext, typeof(long));
         }
 
         private static Expression HandleMin(HandlerContext handlerContext)
@@ -621,9 +601,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
                     handlerContext.SelectExpression.SetProjectionExpression(minExpression);
 
-                    return (Expression)_transformClientExpressionMethodInfo
-                        .MakeGenericMethod(minExpression.Type)
-                        .Invoke(null, new object [] { handlerContext });
+                    return TransformClientExpression(handlerContext, minExpression.Type);
                 }
             }
 
@@ -643,9 +621,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
                     handlerContext.SelectExpression.SetProjectionExpression(maxExpression);
 
-                    return (Expression)_transformClientExpressionMethodInfo
-                        .MakeGenericMethod(maxExpression.Type)
-                        .Invoke(null, new object [] { handlerContext });
+                    return TransformClientExpression(handlerContext, maxExpression.Type);
                 }
             }
 
@@ -698,9 +674,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
                     handlerContext.SelectExpression.SetProjectionExpression(sumExpression);
 
-                    return (Expression)_transformClientExpressionMethodInfo
-                        .MakeGenericMethod(sumExpression.Type)
-                        .Invoke(null, new object [] { handlerContext });
+                    return TransformClientExpression(handlerContext, sumExpression.Type);
                 }
             }
 
@@ -738,24 +712,8 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                     typeof(bool)));
         }
 
-        private static readonly MethodInfo _transformClientExpressionMethodInfo
-            = typeof(RelationalResultOperatorHandler).GetTypeInfo()
-                .GetDeclaredMethod(nameof(TransformClientExpression));
-
-        private static Expression TransformClientExpression<TResult>(HandlerContext handlerContext)
-        {
-            var querySource
-                = handlerContext.QueryModel.BodyClauses
-                      .OfType<IQuerySource>()
-                      .LastOrDefault()
-                  ?? handlerContext.QueryModel.MainFromClause;
-
-            var visitor
-                = new ResultTransformingExpressionVisitor<TResult>(
-                    querySource,
-                    handlerContext.QueryModelVisitor.QueryCompilationContext);
-
-            return visitor.Visit(handlerContext.QueryModelVisitor.Expression);
-        }
+        private static Expression TransformClientExpression(HandlerContext handlerContext, Type resultType)
+            => new ResultTransformingExpressionVisitor(handlerContext.QueryModelVisitor.QueryCompilationContext, resultType)
+                .Visit(handlerContext.QueryModelVisitor.Expression);
     }
 }

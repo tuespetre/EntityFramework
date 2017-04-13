@@ -901,7 +901,17 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
                             mappingElement.Key.RemoveRangeFromProjection(mappingElement.Value);
                         }
 
-                        _queryModelVisitor.LiftInjectedParameters(subQueryModelVisitor);
+                        var injectedParameterLifter = new InjectedParameterLiftingExpressionVisitor();
+                        injectedParameterLifter.Visit(subQueryModelVisitor.Expression);
+
+                        if (injectedParameterLifter.FoundParameters.Any())
+                        {
+                            _queryModelVisitor.Expression
+                                = new InjectParametersExpression(
+                                    _queryModelVisitor.QueryCompilationContext,
+                                    _queryModelVisitor.Expression,
+                                    injectedParameterLifter.FoundParameters);
+                        }
 
                         return selectExpression;
                     }
@@ -911,6 +921,24 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
             }
 
             return null;
+        }
+
+        private sealed class InjectedParameterLiftingExpressionVisitor : ExpressionVisitor
+        {
+            public Dictionary<string, Expression> FoundParameters { get; } = new Dictionary<string, Expression>();
+
+            protected override Expression VisitExtension(Expression extensionExpression)
+            {
+                if (extensionExpression is InjectParametersExpression injectParametersExpression)
+                { 
+                    foreach (var pair in injectParametersExpression.Parameters)
+                    {
+                        FoundParameters.Add(pair.Key, pair.Value);
+                    }
+                }
+
+                return base.VisitExtension(extensionExpression);
+            }
         }
 
         /// <summary>
